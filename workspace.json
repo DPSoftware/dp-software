@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "projects": {
+    "dp-software": "apps/dp-software",
+    "dp-software-e2e": "apps/dp-software-e2e"
+  }
+}

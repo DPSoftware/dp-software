@@ -1,0 +1,27 @@
+{
+  "sourceRoot": "apps/dp-software-e2e/src",
+  "projectType": "application",
+  "targets": {
+    "e2e": {
+      "executor": "@nrwl/cypress:cypress",
+      "options": {
+        "cypressConfig": "apps/dp-software-e2e/cypress.json",
+        "devServerTarget": "dp-software:serve:development"
+      },
+      "configurations": {
+        "production": {
+          "devServerTarget": "dp-software:serve:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/dp-software-e2e/**/*.{js,ts}"]
+      }
+    }
+  },
+  "tags": [],
+  "implicitDependencies": ["dp-software"]
+}
