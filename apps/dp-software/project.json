@@ -15,7 +15,6 @@
         "polyfills": "apps/dp-software/src/polyfills.ts",
         "tsConfig": "apps/dp-software/tsconfig.app.json",
         "assets": [
-          "apps/dp-software/src/favicon.ico",
           "apps/dp-software/src/assets"
         ],
         "styles": [],
