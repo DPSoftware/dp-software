@@ -18,11 +18,3 @@ const ptsParser = new PTSParser(1000);
  */
 const { points, colors } = parser.parse(file);
 ```
-
-## Building
-
-Run `yarn build point-cloud` to build the library.
-
-## Running unit tests
-
-Run `yarn test point-cloud` to execute the unit tests via [Jest](https://jestjs.io).
