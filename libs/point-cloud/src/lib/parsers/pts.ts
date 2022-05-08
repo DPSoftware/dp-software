@@ -1,4 +1,4 @@
-import { addValuesToBuffer } from './utils';
+import { addValuesToBuffer, containsIndex, interpolateIndices } from './utils';
 
 export class PTSParser {
   private limitPoints?: number;
@@ -15,34 +15,35 @@ export class PTSParser {
     const reader = stream.getReader();
     const decoder = new TextDecoder('utf-8');
 
+    // reading first chunk separately as it contains the amount of points
     const { value: firstChunk } = await reader.read();
 
     const data = decoder.decode(firstChunk).split(/\r?\n/);
 
     const pointCloudLength = Number(data.shift());
-    // last string might be incomplete in a chunk
+
+    // last string might be incomplete in the given chunk
     let tail = data.pop();
-    let chunkLength = data.length;
 
     const buffersLength = Math.min(
       this.limitPoints ?? pointCloudLength,
       pointCloudLength
     );
 
+    const indices = interpolateIndices(pointCloudLength, buffersLength);
+
     const points = new Float32Array(3 * buffersLength);
     const colors = new Uint8Array(3 * buffersLength);
 
-    const step = pointCloudLength / buffersLength;
-    // const elementsInCurrentChunk = data.length / step;
     let index = 0;
+    let pointer = 0;
 
     for (index; index < data.length; index++) {
-      try {
+      if (containsIndex(indices, index)) {
         const [p, c] = this.parseRow(data[index]);
-        addValuesToBuffer(points, index * 3, p);
-        addValuesToBuffer(colors, index * 3, c);
-      } catch (e) {
-        console.warn(e);
+        addValuesToBuffer(points, pointer * 3, p);
+        addValuesToBuffer(colors, pointer * 3, c);
+        pointer++;
       }
     }
 
@@ -54,17 +55,16 @@ export class PTSParser {
       if (value !== undefined) {
         // concatenate the rest from the last iteration
         const chunkData = (tail + decoder.decode(value)).split(/\r?\n/);
+
+        // last string might be incomplete in the given chunk
         tail = chunkData.pop();
-        const chunkLength = chunkData.length;
 
         for (let i = 0; i < chunkData.length; i++) {
-
-          try {
+          if (containsIndex(indices, index)) {
             const [p, c] = this.parseRow(chunkData[i]);
-            addValuesToBuffer(points, index * 3, p);
-            addValuesToBuffer(colors, index * 3, c);
-          } catch (e) {
-            console.warn(e);
+            addValuesToBuffer(points, pointer * 3, p);
+            addValuesToBuffer(colors, pointer * 3, c);
+            pointer++;
           }
 
           index++;
@@ -73,12 +73,11 @@ export class PTSParser {
 
       // parsing the last values
       if (value === undefined && tail !== undefined) {
-        try {
+        if (containsIndex(indices, index)) {
           const [p, c] = this.parseRow(tail);
-          addValuesToBuffer(points, index * 3, p);
-          addValuesToBuffer(colors, index * 3, c);
-        } catch (e) {
-          console.warn(e);
+          addValuesToBuffer(points, pointer * 3, p);
+          addValuesToBuffer(colors, pointer * 3, c);
+          pointer++;
         }
 
         index++;
@@ -96,7 +95,7 @@ export class PTSParser {
 
     // TODO make a better validator
     if (data.length !== 7) {
-      throw new Error('invalid data row: ' + row)
+      throw new Error('invalid data row: ' + row);
     }
 
     const [x, y, z, _, r, g, b] = data;
