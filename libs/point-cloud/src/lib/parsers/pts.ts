@@ -1,9 +1,10 @@
+import { addValuesToBuffer } from './utils';
 
 export class PTSParser {
 
-    private limitPoints: number | null = null;
+    private limitPoints?: number;
 
-    public constructor(limitPoints: number | null = null) {
+    public constructor(limitPoints?: number) {
       this.limitPoints = limitPoints;
     }
 
@@ -21,26 +22,41 @@ export class PTSParser {
 
         const pointCloudLength = Number(data.shift());
 
+        // last string might be incomplete in a chunk
         let tail = data.pop();
         let chankLength = data.length;
 
-        console.log(pointCloudLength, tail, data);
-
         const buffersLength = Math.min(this.limitPoints ?? pointCloudLength,  pointCloudLength);
 
-        const vertices = new Float32Array(3 * buffersLength);
+        const points = new Float32Array(3 * buffersLength);
         const colors = new Uint8Array(3 * buffersLength);
 
-        let running = true;
-        while (running) {
-          const { done, value } = await reader.read();
-          running = !done;
+        const step = pointCloudLength / buffersLength;
+        // const elementsInCurrentChunk = data.length / step;
+        let index = 0;
 
-          if (value) {
-            console.log(decoder.decode(value));
-          }
+        for (index; index < data.length; index++) {
+            const [p, c] = this.parseRow(data[index])
+            addValuesToBuffer(points, index * 3, p);
+            addValuesToBuffer(colors, index * 3, c);
         }
 
+        console.log(points, colors);
+
+        // let running = true;
+        // while (running) {
+        //   const { done, value } = await reader.read();
+        //   running = !done;
+
+        //   if (value !== undefined) {
+        //     console.log(decoder.decode(value));
+        //   }
+        // }
+
+        return {
+          points: points,
+          colors: colors,
+        };
     }
 
     private parseRow(row: string) {

@@ -1,6 +1,6 @@
 # DP Software
 
-Here you can find collection of helpful utilities for BabylonJS or 3D projects
+Here you can find a collection of helpful utilities for BabylonJS or 3D projects
 
 To test the convertor run `yarn start` and open `http://localhost:4200/` in your browser
 
