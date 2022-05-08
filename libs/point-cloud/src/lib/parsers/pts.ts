@@ -1,103 +1,109 @@
 import { addValuesToBuffer } from './utils';
 
 export class PTSParser {
+  private limitPoints?: number;
 
-    private limitPoints?: number;
+  public constructor(limitPoints?: number) {
+    this.limitPoints = limitPoints;
+  }
 
-    public constructor(limitPoints?: number) {
-      this.limitPoints = limitPoints;
+  public async parse(file: Blob) {
+    const stream = file.stream() as unknown as ReadableStream<Uint8Array>;
+    if (!stream.getReader) {
+      throw new Error('Corrupted stream of Uint8Array');
+    }
+    const reader = stream.getReader();
+    const decoder = new TextDecoder('utf-8');
+
+    const { value: firstChunk } = await reader.read();
+
+    const data = decoder.decode(firstChunk).split(/\r?\n/);
+
+    const pointCloudLength = Number(data.shift());
+    // last string might be incomplete in a chunk
+    let tail = data.pop();
+    let chunkLength = data.length;
+
+    const buffersLength = Math.min(
+      this.limitPoints ?? pointCloudLength,
+      pointCloudLength
+    );
+
+    const points = new Float32Array(3 * buffersLength);
+    const colors = new Uint8Array(3 * buffersLength);
+
+    const step = pointCloudLength / buffersLength;
+    // const elementsInCurrentChunk = data.length / step;
+    let index = 0;
+
+    for (index; index < data.length; index++) {
+      try {
+        const [p, c] = this.parseRow(data[index]);
+        addValuesToBuffer(points, index * 3, p);
+        addValuesToBuffer(colors, index * 3, c);
+      } catch (e) {
+        console.warn(e);
+      }
     }
 
-    public async parse(file: Blob) {
-        const stream = file.stream() as unknown as ReadableStream<Uint8Array>;
-        if (!stream.getReader) {
-          throw new Error('Corrupted stream of Uint8Array');
-        }
-        const reader = stream.getReader();
-        const decoder = new TextDecoder('utf-8');
+    let running = true;
+    while (running) {
+      const { done, value } = await reader.read();
+      running = !done;
 
-        const { value: firstChunk } = await reader.read();
+      if (value !== undefined) {
+        // concatenate the rest from the last iteration
+        const chunkData = (tail + decoder.decode(value)).split(/\r?\n/);
+        tail = chunkData.pop();
+        const chunkLength = chunkData.length;
 
-        const data = decoder.decode(firstChunk).split(/\r?\n/);
+        for (let i = 0; i < chunkData.length; i++) {
 
-        const pointCloudLength = Number(data.shift());
-
-        // last string might be incomplete in a chunk
-        let tail = data.pop();
-        let chankLength = data.length;
-
-        const buffersLength = Math.min(this.limitPoints ?? pointCloudLength,  pointCloudLength);
-
-        const points = new Float32Array(3 * buffersLength);
-        const colors = new Uint8Array(3 * buffersLength);
-
-        const step = pointCloudLength / buffersLength;
-        // const elementsInCurrentChunk = data.length / step;
-        let index = 0;
-
-        for (index; index < data.length; index++) {
-            const [p, c] = this.parseRow(data[index])
+          try {
+            const [p, c] = this.parseRow(chunkData[i]);
             addValuesToBuffer(points, index * 3, p);
             addValuesToBuffer(colors, index * 3, c);
+          } catch (e) {
+            console.warn(e);
+          }
+
+          index++;
+        }
+      }
+
+      // parsing the last values
+      if (value === undefined && tail !== undefined) {
+        try {
+          const [p, c] = this.parseRow(tail);
+          addValuesToBuffer(points, index * 3, p);
+          addValuesToBuffer(colors, index * 3, c);
+        } catch (e) {
+          console.warn(e);
         }
 
-        console.log(points, colors);
-
-        // let running = true;
-        // while (running) {
-        //   const { done, value } = await reader.read();
-        //   running = !done;
-
-        //   if (value !== undefined) {
-        //     console.log(decoder.decode(value));
-        //   }
-        // }
-
-        return {
-          points: points,
-          colors: colors,
-        };
+        index++;
+      }
     }
 
-    private parseRow(row: string) {
-        const [x, y, z, _, r, g, b] = row.split(' ').map(v => +v);
+    return {
+      points: points,
+      colors: colors,
+    };
+  }
 
-        return [[x, y, z], [r, g, b]];
+  private parseRow(row: string) {
+    const data = row.split(' ').map((v) => +v);
+
+    // TODO make a better validator
+    if (data.length !== 7) {
+      throw new Error('invalid data row: ' + row)
     }
+
+    const [x, y, z, _, r, g, b] = data;
+
+    return [
+      [x, y, z],
+      [r, g, b],
+    ];
+  }
 }
-
-// function readAsStream(file: Blob) {
-//     const myStream = file.stream() as ReadableStream<Uint8Array>;
-//     const reader = myStream.getReader();
-//     (async () => {
-//       const decoder = new TextDecoder('utf-8');
-
-//       const { value: firstChunk } = await reader.read();
-//       const list = decoder.decode(firstChunk).split(/\r?\n/);
-//       const num = Number(list.shift());
-//       // TODO swap list if initial PC smaller
-//       const end_num = Math.min(1e+5, num);
-//       const vertices = new Float32Array(3 * end_num)
-//       const colors = new Int32Array(3 * end_num)
-//       const step = num / end_num;
-//       // let i = 0;
-
-//       // for (i; i < list.length; i += 1) {
-//       //   const j = Math.round(i * step);
-//       //   const str = list[j].split(' ');
-//       //   vertices[3 * i] = +str[0];
-//       //   vertices[3 * i+1] = +str[1];
-//       //   vertices[3 * i+2] = +str[2];
-//       //   colors[3 * i] = +str[4];
-//       //   colors[3 * i+1] = +str[5];
-//       //   colors[3 * i+2] = +str[6];
-//       // }
-
-//       let running = true;
-//       while (running) {
-//         const { done, value } = await reader.read();
-//         running = !done;
-//         console.log(decoder.decode(value));
-//       }
-//     })()
-//   }

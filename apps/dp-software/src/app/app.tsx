@@ -11,10 +11,9 @@ export function App() {
 
   const fileHandler = useCallback((e: any) => {
     const file = e.target.files[0] as File;
-    console.log(file);
 
     const parser = new PTSParser();
-    parser.parse(file);
+    parser.parse(file).then(console.log);
   }, []);
 
   return (
