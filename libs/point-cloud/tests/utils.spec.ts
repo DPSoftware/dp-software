@@ -8,8 +8,6 @@ describe('Utils', () => {
 
         const res = interpolateIndices(sourceLength, targetArray)
 
-        console.log(res);
-
         expect(res.length).toBe(5);
         expect(Object.values(res)).toEqual([0, 2, 4, 6, 8]);
     });
@@ -19,8 +17,6 @@ describe('Utils', () => {
         const targetArray = 9;
 
         const res = interpolateIndices(sourceLength, targetArray)
-
-        console.log(res);
 
         expect(res.length).toBe(9);
         expect(Object.values(res)).toEqual([0, 1, 2, 3, 4, 6, 7, 8, 9]);
@@ -32,8 +28,6 @@ describe('Utils', () => {
 
         const res = interpolateIndices(sourceLength, targetArray)
 
-        console.log(res);
-
         expect(res.length).toBe(10);
         expect(Object.values(res)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
     });
@@ -43,8 +37,6 @@ describe('Utils', () => {
         const targetArray = 100;
 
         const res = interpolateIndices(sourceLength, targetArray)
-
-        console.log(res);
 
         expect(res.length).toBe(10);
         expect(Object.values(res)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);

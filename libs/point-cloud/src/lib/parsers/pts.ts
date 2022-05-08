@@ -1,4 +1,4 @@
-import { addValuesToBuffer, containsIndex, interpolateIndices } from './utils';
+import { addValuesToBuffer, containsIndex, interpolateIndices } from '../utils';
 
 export class PTSParser {
   private limitPoints?: number;
