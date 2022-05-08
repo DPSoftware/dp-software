@@ -1,0 +1,14 @@
+{
+  "babelrcRoots": ["*"],
+  "presets": [
+    "@babel/preset-typescript",
+    "@nrwl/react/babel"
+  ],
+  "plugins": [
+    [
+      "@babel/plugin-proposal-class-properties",
+      { "legacy": true }
+    ],
+    [ "@babel/plugin-transform-runtime" ]
+  ]
+}
