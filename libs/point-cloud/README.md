@@ -2,19 +2,22 @@
 
 The library reads big point clouds in the browser as a stream without allocating too much memory.
 In addition, it allows loading point clouds bigger than 512MB.
-The library allows partially reading the point cloud by using point number limitations.
+You can specify a voxel size to which the point cloud will be reduced.
 
 Usage:
 ```javascript:
 /**
- * reads 1000 points from the provided point cloud,
- * the points will be taken with an interpolated steps or randomly
+ * Initialize a point cloud parser and specify a size of voxel
+ * Only 1 point per voxel will be read
  */
-const ptsParser = new PTSParser(1000);
+const ptsParser = new PTSParser(0.05);
 
 /**
- * The parser will return Float32Array with points and UInt8Array with colors.
- * Pay attention if you need float values for colors then you have to divide color values by 256
+ * Subscribe on reading points
+ * If you have huge point cloud files, browser will limit the reading buffer.
+ * In this case points will be delivered in the next onNewPoints tick.
  */
-const { points, colors } = parser.parse(file);
+parser.onNewPoints.subscribe(data => {
+    points = points.concat(data.points);
+});
 ```

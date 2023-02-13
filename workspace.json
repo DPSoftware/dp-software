@@ -1,7 +1,8 @@
 {
-  "version": 2,
-  "projects": {
-    "dp-software": "apps/dp-software",
-    "point-cloud": "libs/point-cloud"
-  }
+    "version": 2,
+    "projects": {
+        "dp-software": "apps/dp-software",
+        "point-cloud": "libs/point-cloud",
+        "utils": "libs/utils"
+    }
 }
