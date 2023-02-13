@@ -25,10 +25,6 @@ export function App() {
             console.log(`data are processed in ${(performance.now() - now) / 1000}`);
         });
         parser.parse(file);
-        // parser.parse(file).then(res => {
-        //     console.log(res);
-        //     console.log(`data are processed in ${(performance.now() - now) / 1000}`);
-        // });
     }, []);
 
     return (
