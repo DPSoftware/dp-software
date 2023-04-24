@@ -1,6 +1,6 @@
 {
   "name": "@dp-software/point-cloud",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "type": "module",
   "description": "The library helps read big point cloud files in the browser as a stream. Perfect solution for rendering Leica 3d scans in a browser without processing them on the backend.",
   "homepage": "https://github.com/DPSoftware/dp-software/tree/main/libs/point-cloud",
