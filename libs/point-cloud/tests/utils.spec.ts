@@ -1,4 +1,4 @@
-import { containsIndex, interpolateIndices } from '../src/lib/parsers/utils';
+import { containsIndex, interpolateIndices } from '../src/lib/utils';
 
 describe('Utils', () => {
 
