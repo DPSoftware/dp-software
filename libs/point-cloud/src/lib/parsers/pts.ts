@@ -9,8 +9,9 @@ export interface PointCloudData {
 
 export class PTSParser {
 
-    public readonly onNewPoints = new Observable<PointCloudData>()
-    public readonly onFinish = new Observable<void>()
+    public readonly onNewPoints = new Observable<PointCloudData>();
+    public readonly onParseError = new Observable<string>();
+    public readonly onFinish = new Observable<void>();
     private readonly voxelSize: number;
     private parsingInProgress = false;
 
@@ -37,15 +38,19 @@ export class PTSParser {
             const colors = [];
 
             for (const pointRaw of data) {
-                const point = this.parseRow(pointRaw);
-                const p = point[0] as [number, number, number];
-                const c = point[1] as [number, number, number];
-                const hash = hashPerVoxel(this.voxelSize, p);
+                try {
+                    const point = this.parseRow(pointRaw);
+                    const p = point[0] as [number, number, number];
+                    const c = point[1] as [number, number, number];
+                    const hash = hashPerVoxel(this.voxelSize, p);
 
-                if (!voxelTable[hash]) {
-                    voxelTable[hash] = true;
-                    points.push(p);
-                    colors.push(c);
+                    if (!voxelTable[hash]) {
+                        voxelTable[hash] = true;
+                        points.push(p);
+                        colors.push(c);
+                    }
+                } catch (e) {
+                    this.onParseError.notify((e as Error).message);
                 }
             }
             this.onNewPoints.notify({
@@ -58,22 +63,31 @@ export class PTSParser {
             this.parsingInProgress = false;
         });
 
-        parser.parseFile();
+        try {
+            parser.parseFile();
+        } catch (e) {
+            this.onParseError.notify((e as Error).message);
+        }
     }
 
     private parseRow(row: string) {
-        const data = row.split(' ').map(v => Number(v));
+        const data = row.split(' ');
 
-        // TODO make a better validator
-        if (data.length !== 7) {
-            throw new Error('invalid data row: ' + row);
+        if (data.length < 3) {
+            throw new Error(`Invalid row: ${row}`);
         }
 
-        const [x, y, z, _, r, g, b] = data;
+        // use only position and default white color when no color is provided
+        if (data.length < 7) {
+            return [
+                [+data[0], +data[1], +data[2]],
+                [114, 114, 114],
+            ];
+        }
 
         return [
-            [x, y, z],
-            [r, g, b],
+            [+data[0], +data[1], +data[2]],
+            [+data[4], +data[5], +data[6]],
         ];
     }
 }

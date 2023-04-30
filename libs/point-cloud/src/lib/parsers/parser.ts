@@ -15,7 +15,7 @@ export class Parser {
         this.headerLength = headerLength;
     }
 
-    public async parseFile() {
+    public parseFile(): void {
         const stream = this.file.stream()
         if (!stream.getReader) {
             throw new Error('Corrupted stream of Uint8Array');
@@ -23,15 +23,23 @@ export class Parser {
 
         const reader = getFileReader(this.file);
 
-        let running = true;
         let isFirst = true;
         let residual = '';
-        while (running) {
+
+        /**
+         * currently requestIdleCallback is not supported in Safari
+         * there for we use setInterval with 0 delay to put the parsing process in the event loop
+         * instead of blocking the main thread with a while loop
+         *
+         * FIXME: use requestIdleCallback when it is supported in Safari
+         */
+        const interval = setInterval(async () => {
             const {done, value} = await reader.read();
-            running = !done;
 
             if (done) {
-                break;
+                this.onFinish.notify();
+                clearInterval(interval);
+                return;
             }
 
             const data = (residual + decoder.decode(value)).split('\n');
@@ -45,13 +53,11 @@ export class Parser {
             } else {
                 this.onNextData.notify(data);
             }
-        }
+        }, 0);
 
         if (residual !== '') {
             this.onNextData.notify([residual]);
         }
-
-        this.onFinish.notify();
     }
 
 }
