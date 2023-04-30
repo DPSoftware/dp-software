@@ -32,8 +32,6 @@ export class Parser {
             if (done) {
                 this.onFinish.notify();
                 return;
-            } else {
-                window.requestAnimationFrame(chunkParser);
             }
 
             const data = (residual + decoder.decode(value)).split('\n');
@@ -47,6 +45,8 @@ export class Parser {
             } else {
                 this.onNextData.notify(data);
             }
+
+            window.requestAnimationFrame(chunkParser);
         };
 
         window.requestAnimationFrame(chunkParser);
