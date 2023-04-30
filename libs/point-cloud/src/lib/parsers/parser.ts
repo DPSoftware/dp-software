@@ -26,20 +26,14 @@ export class Parser {
         let isFirst = true;
         let residual = '';
 
-        /**
-         * currently requestIdleCallback is not supported in Safari
-         * there for we use setInterval with 0 delay to put the parsing process in the event loop
-         * instead of blocking the main thread with a while loop
-         *
-         * FIXME: use requestIdleCallback when it is supported in Safari
-         */
-        const interval = setInterval(async () => {
+        const chunkParser = async () => {
             const {done, value} = await reader.read();
 
             if (done) {
                 this.onFinish.notify();
-                clearInterval(interval);
                 return;
+            } else {
+                window.requestAnimationFrame(chunkParser);
             }
 
             const data = (residual + decoder.decode(value)).split('\n');
@@ -53,7 +47,9 @@ export class Parser {
             } else {
                 this.onNextData.notify(data);
             }
-        }, 0);
+        };
+
+        window.requestAnimationFrame(chunkParser);
 
         if (residual !== '') {
             this.onNextData.notify([residual]);
