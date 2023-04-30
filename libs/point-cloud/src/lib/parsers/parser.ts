@@ -15,7 +15,7 @@ export class Parser {
         this.headerLength = headerLength;
     }
 
-    public async parseFile() {
+    public parseFile(): void {
         const stream = this.file.stream()
         if (!stream.getReader) {
             throw new Error('Corrupted stream of Uint8Array');
@@ -23,15 +23,15 @@ export class Parser {
 
         const reader = getFileReader(this.file);
 
-        let running = true;
         let isFirst = true;
         let residual = '';
-        while (running) {
+
+        const chunkParser = async () => {
             const {done, value} = await reader.read();
-            running = !done;
 
             if (done) {
-                break;
+                this.onFinish.notify();
+                return;
             }
 
             const data = (residual + decoder.decode(value)).split('\n');
@@ -45,13 +45,15 @@ export class Parser {
             } else {
                 this.onNextData.notify(data);
             }
-        }
+
+            window.requestAnimationFrame(chunkParser);
+        };
+
+        window.requestAnimationFrame(chunkParser);
 
         if (residual !== '') {
             this.onNextData.notify([residual]);
         }
-
-        this.onFinish.notify();
     }
 
 }
