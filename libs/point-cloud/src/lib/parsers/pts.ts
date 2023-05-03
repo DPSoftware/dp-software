@@ -57,6 +57,7 @@ export class PTSParser {
                     }
                 } catch (e) {
                     this.onParseError.notify((e as Error).message);
+                    break;
                 }
             }
             this.onNewPoints.notify({
@@ -79,16 +80,8 @@ export class PTSParser {
     private parseRow(row: string) {
         const data = row.split(' ');
 
-        if (data.length < 3) {
+        if (data.length !== 7) {
             throw new Error(`Invalid row: ${row}`);
-        }
-
-        // use only position and default white color when no color is provided
-        if (data.length < 7) {
-            return [
-                [+data[0], +data[1], +data[2]],
-                [114, 114, 114],
-            ];
         }
 
         return [

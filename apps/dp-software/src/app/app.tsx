@@ -29,6 +29,7 @@ export function App() {
         const now = performance.now();
         let points: [number, number, number][] = [];
         let colors: [number, number, number][] = [];
+        parser.onParseError.subscribe(console.error);
         parser.onNewPoints.subscribe(data => {
             points = points.concat(data.points);
             colors = colors.concat(data?.colors || [255, 255, 255]);
