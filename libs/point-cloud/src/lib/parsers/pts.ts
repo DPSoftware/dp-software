@@ -12,6 +12,7 @@ export class PTSParser {
     public readonly onNewPoints = new Observable<PointCloudData>();
     public readonly onParseError = new Observable<string>();
     public readonly onFinish = new Observable<void>();
+    public readonly onNumberOfPoints: Observable<number> = new Observable<number>();
     private readonly voxelSize: number;
     private parsingInProgress = false;
 
@@ -32,6 +33,11 @@ export class PTSParser {
 
         const parser = new Parser(file, 1);
         const voxelTable: Record<string, boolean> = {};
+
+        parser.onHeaderDataRead.subscribe((data) => {
+            const numberOfPoints = Number(data[0]);
+            this.onNumberOfPoints.notify(numberOfPoints);
+        });
 
         parser.onNextData.subscribe((data) => {
             const points = [];
