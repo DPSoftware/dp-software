@@ -13,11 +13,13 @@ export class PTSParser {
     public readonly onParseError = new Observable<string>();
     public readonly onFinish = new Observable<void>();
     public readonly onNumberOfPoints: Observable<number> = new Observable<number>();
+    public readonly loadingStatus: Observable<number> = new Observable<number>()
     private readonly voxelSize: number;
     private parsingInProgress = false;
 
     public constructor(voxelSize = 0.02) {
         this.voxelSize = voxelSize;
+        this.loadingStatus.notify(0);
     }
 
     /**
@@ -31,17 +33,26 @@ export class PTSParser {
         }
         this.parsingInProgress = true;
 
+        this.loadingStatus.notify(0);
+
         const parser = new Parser(file, 1);
         const voxelTable: Record<string, boolean> = {};
 
+        let totalNumberOfPoints = 0;
+        let accumulatetNumberOfPoints = 0;
+
         parser.onHeaderDataRead.subscribe((data) => {
-            const numberOfPoints = Number(data[0]);
-            this.onNumberOfPoints.notify(numberOfPoints);
+            totalNumberOfPoints = Number(data[0]);
+            this.onNumberOfPoints.notify(totalNumberOfPoints);
         });
 
         parser.onNextData.subscribe((data) => {
             const points = [];
             const colors = [];
+
+            accumulatetNumberOfPoints += data.length;
+
+            this.loadingStatus.notify(accumulatetNumberOfPoints / totalNumberOfPoints);
 
             for (const pointRaw of data) {
                 try {
