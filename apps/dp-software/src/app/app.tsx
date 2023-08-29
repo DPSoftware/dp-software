@@ -23,9 +23,13 @@ export function App() {
         const file = e.target.files[0] as File;
 
         const parser = new PTSParser(0.05);
-        parser.onNumberOfPoints.subscribe(n => {
-            console.log(`number of points: ${n}`);
-        });
+        // parser.onNumberOfPoints.subscribe(n => {
+        //     console.log(`number of points: ${n}`);
+        // });
+
+        parser.loadingStatus.subscribe(percent => {
+            console.log(`loading: ${percent * 100}%`);
+        })
         const now = performance.now();
         let points: [number, number, number][] = [];
         let colors: [number, number, number][] = [];
