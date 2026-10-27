@@ -1,0 +1,2 @@
+# the linked wasm build is git-ignored but must be copied by the point-cloud-wasm build assets
+!/libs/point-cloud-wasm/src/lib/wasm

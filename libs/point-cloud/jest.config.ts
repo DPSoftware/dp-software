@@ -10,5 +10,9 @@ module.exports = {
     '^.+\\.[tj]s$': 'ts-jest',
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
+  // Sources use explicit .js extensions for ESM; map them back to the .ts files.
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
   coverageDirectory: '../../coverage/libs/point-cloud',
 };

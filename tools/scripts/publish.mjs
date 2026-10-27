@@ -7,7 +7,8 @@
  * You might need to authenticate with NPM before running this script.
  */
 
-import { readCachedProjectGraph } from '@nrwl/devkit';
+// @nrwl/devkit is CommonJS; newer Node versions can't resolve its named exports from ESM
+import devkit from '@nrwl/devkit';
 import { execSync } from 'child_process';
 import { readFileSync, writeFileSync } from 'fs';
 import chalk from 'chalk';
@@ -30,7 +31,7 @@ invariant(
   `No version provided or version did not match Semantic Versioning, expected: #.#.#-tag.# or #.#.#, got ${version}.`
 );
 
-const graph = readCachedProjectGraph();
+const graph = devkit.readCachedProjectGraph();
 const project = graph.nodes[name];
 
 invariant(
@@ -58,4 +59,5 @@ try {
 }
 
 // Execute "npm publish" to publish
-execSync(`npm publish --access public --tag ${tag}`);
+// Inherit stdio so npm's output and its 2FA (OTP) prompt reach the terminal
+execSync(`npm publish --access public --tag ${tag}`, { stdio: 'inherit' });

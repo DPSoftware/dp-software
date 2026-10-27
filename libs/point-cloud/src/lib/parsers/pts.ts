@@ -1,30 +1,54 @@
-import {Observable} from "../observable";
-import {Parser} from "./parser";
+import {Observable} from "../observable.js";
+import {ErrorCode, ParseResult, PointCloudError, PointCloudParseError} from "../errors.js";
+import {PointCloudData, PtsEngine, PtsEngineSink, ResolvedPtsOptions, RGB} from "./engines/types.js";
+import {JsPtsEngine, parsePtsRow} from "./engines/js-engine.js";
 
-export interface PointCloudData {
-    points: [number, number, number][];
-    colors?: [number, number, number][];
-    normals?: [number, number, number][];
+export type {RGB, PointCloudData};
+
+export interface PTSParserOptions {
+    /**
+     * Accept rows that carry no r g b values (`x y z` or `x y z intensity`).
+     * Defaults to false: such rows are reported on `onError` (code `NO_COLOR`, fatal) and `onParseError`.
+     */
+    acceptColorless?: boolean;
+    /**
+     * Color assigned to colorless points when `acceptColorless` is true.
+     * Defaults to grey.
+     */
+    defaultColor?: RGB;
+    /**
+     * Parsing engine. Defaults to the built-in JS streaming parser.
+     * See @dp-software/point-cloud-wasm for a WebAssembly engine.
+     */
+    engine?: PtsEngine;
 }
+
+export const DEFAULT_COLOR: RGB = [128, 128, 128];
 
 export class PTSParser {
 
     public readonly onNewPoints = new Observable<PointCloudData>();
     public readonly onParseError = new Observable<string>();
-    public readonly onFinish = new Observable<void>();
+    public readonly onError = new Observable<PointCloudError>();
+    public readonly onFinish = new Observable<ParseResult>();
     public readonly onNumberOfPoints: Observable<number> = new Observable<number>();
     public readonly loadingStatus: Observable<number> = new Observable<number>()
-    private readonly voxelSize: number;
+    private readonly options: ResolvedPtsOptions;
+    private readonly engine: PtsEngine;
     private parsingInProgress = false;
 
-    public constructor(voxelSize = 0.02) {
-        this.voxelSize = voxelSize;
+    public constructor(voxelSize = 0.02, options: PTSParserOptions = {}) {
+        this.options = {
+            voxelSize,
+            acceptColorless: options.acceptColorless ?? false,
+            defaultColor: options.defaultColor ?? DEFAULT_COLOR,
+        };
+        this.engine = options.engine ?? new JsPtsEngine();
         this.loadingStatus.notify(0);
     }
 
     /**
      * @param file
-     * @param voxelSize
      */
     public parse(file: Blob): void {
         // !!!you cannot parse multiple files simultaneously
@@ -35,79 +59,41 @@ export class PTSParser {
 
         this.loadingStatus.notify(0);
 
-        const parser = new Parser(file, 1);
-        const voxelTable: Record<string, boolean> = {};
-
-        let totalNumberOfPoints = 0;
-        let accumulatetNumberOfPoints = 0;
-
-        parser.onHeaderDataRead.subscribe((data) => {
-            totalNumberOfPoints = Number(data[0]);
-            this.onNumberOfPoints.notify(totalNumberOfPoints);
-        });
-
-        parser.onNextData.subscribe((data) => {
-            const points = [];
-            const colors = [];
-
-            accumulatetNumberOfPoints += data.length;
-
-            this.loadingStatus.notify(accumulatetNumberOfPoints / totalNumberOfPoints);
-
-            for (const pointRaw of data) {
-                try {
-                    const point = this.parseRow(pointRaw);
-                    const p = point[0] as [number, number, number];
-                    const c = point[1] as [number, number, number];
-                    const hash = hashPerVoxel(this.voxelSize, p);
-
-                    if (!voxelTable[hash]) {
-                        voxelTable[hash] = true;
-                        points.push(p);
-                        colors.push(c);
-                    }
-                } catch (e) {
-                    this.onParseError.notify((e as Error).message);
-                    break;
+        let finished = false;
+        let errorCount = 0;
+        let fatalCode: ErrorCode | undefined;
+        const sink: PtsEngineSink = {
+            header: (total) => this.onNumberOfPoints.notify(total),
+            points: (data) => this.onNewPoints.notify(data),
+            progress: (value) => this.loadingStatus.notify(value),
+            error: (message, code = ErrorCode.UNKNOWN, fatal = false) => {
+                errorCount++;
+                if (fatal && fatalCode === undefined) {
+                    fatalCode = code;
                 }
-            }
-            this.onNewPoints.notify({
-                points: points,
-                colors: colors,
-            });
-        });
-        parser.onFinish.subscribe(() => {
-            this.onFinish.notify();
-            this.parsingInProgress = false;
-        });
+                this.onError.notify({code, message, fatal});
+                this.onParseError.notify(message);
+            },
+            finish: () => {
+                if (finished) {
+                    return;
+                }
+                finished = true;
+                this.parsingInProgress = false;
+                this.onFinish.notify({status: fatalCode ?? 'OK', errorCount});
+            },
+        };
 
         try {
-            parser.parseFile();
+            this.engine.run(file, this.options, sink);
         } catch (e) {
-            this.onParseError.notify((e as Error).message);
+            const code = e instanceof PointCloudParseError ? e.code : ErrorCode.UNKNOWN;
+            sink.error(e instanceof Error ? e.message : String(e), code, true);
+            sink.finish();
         }
     }
 
-    private parseRow(row: string) {
-        const data = row.split(' ');
-
-        if (data.length !== 7) {
-            throw new Error(`Invalid row: ${row}`);
-        }
-
-        return [
-            [+data[0], +data[1], +data[2]],
-            [+data[4], +data[5], +data[6]],
-        ];
+    private parseRow(row: string): [[number, number, number], RGB] {
+        return parsePtsRow(row, this.options);
     }
-}
-
-function hashPerVoxel(voxelSize=0.5, coordinate: [number, number, number]): string {
-    const [x, y, z] = coordinate;
-
-    const vX = Math.floor(x / voxelSize);
-    const vY = Math.floor(y / voxelSize);
-    const vZ = Math.floor(z / voxelSize);
-
-    return `${vX}${vY}${vZ}`;
 }
