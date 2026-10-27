@@ -37,3 +37,9 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+
+# local clone of the private Rust repo (pointcloud-processor-rs)
+/external
+
+# wasm build output of the private Rust repo (linked by tools/scripts/link-wasm.sh)
+/libs/point-cloud-wasm/src/lib/wasm

@@ -1,16 +1,17 @@
 
 type Callback<T> = (data: T) => void;
-type Unsebscriber = (async: boolean) => void;
+export type Unsubscriber = () => void;
 
 class Observer<T> {
     constructor(public cb: Callback<T>) {
     }
 }
 
+/** Minimal synchronous publish/subscribe primitive; `subscribe` returns an unsubscriber. */
 export class Observable<T> {
     private observers: Observer<T>[] = [];
 
-    public subscribe(cb: Callback<T>): Unsebscriber {
+    public subscribe(cb: Callback<T>): Unsubscriber {
         const observer = new Observer(cb);
         this.observers.push(observer);
 

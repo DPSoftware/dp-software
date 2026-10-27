@@ -1,0 +1,30 @@
+{
+  "name": "@dp-software/point-cloud-wasm",
+  "version": "0.3.0",
+  "type": "module",
+  "description": "WebAssembly point cloud reader for @dp-software/point-cloud: PointCloudParser for PTS, E57 and PLY files, and a PtsEngine for PTSParser. Parses big files in a Web Worker with a Rust reader.",
+  "homepage": "https://github.com/DPSoftware/dp-software/tree/main/libs/point-cloud-wasm",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DPSoftware/dp-software.git"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "point cloud",
+    "3d",
+    "parsing point cloud",
+    "pts",
+    "e57",
+    "ply",
+    "wasm",
+    "webassembly",
+    "web worker"
+  ],
+  "author": "@dperyel (https://github.com/dperyel)",
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "peerDependencies": {
+    "@dp-software/point-cloud": ">=0.4.0"
+  }
+}

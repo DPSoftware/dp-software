@@ -1,0 +1,88 @@
+{
+    "name": "point-cloud-wasm",
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "sourceRoot": "libs/point-cloud-wasm/src",
+    "targets": {
+        "build": {
+            "executor": "@nrwl/js:tsc",
+            "outputs": ["{options.outputPath}"],
+            "options": {
+                "outputPath": "dist/libs/point-cloud-wasm",
+                "main": "libs/point-cloud-wasm/src/index.ts",
+                "tsConfig": "libs/point-cloud-wasm/tsconfig.lib.json",
+                "updateBuildableProjectDepsInPackageJson": false,
+                "assets": [
+                    "libs/point-cloud-wasm/*.md",
+                    {
+                        "input": "libs/point-cloud-wasm/src/lib/wasm",
+                        "glob": "{*.js,*.wasm,*.d.ts}",
+                        "output": "src/lib/wasm"
+                    },
+                    {
+                        "input": "libs/point-cloud-wasm/src/lib/wasm",
+                        "glob": "THIRD_PARTY_LICENSES.md",
+                        "output": "."
+                    },
+                    {
+                        "input": ".",
+                        "glob": "LICENSE",
+                        "output": "."
+                    },
+                    {
+                        "input": ".",
+                        "glob": "NOTICE",
+                        "output": "."
+                    }
+                ]
+            },
+            "dependsOn": ["^build", "check-wasm"]
+        },
+        "check-wasm": {
+            "executor": "nx:run-commands",
+            "options": {
+                "command": "tools/scripts/link-wasm.sh --check"
+            }
+        },
+        "publish": {
+            "executor": "@nrwl/workspace:run-commands",
+            "options": {
+                "command": "node tools/scripts/publish.mjs point-cloud-wasm {args.ver} {args.tag}"
+            },
+            "dependsOn": [
+                {
+                    "projects": "self",
+                    "target": "build"
+                }
+            ]
+        },
+        "lint": {
+            "executor": "@nrwl/linter:eslint",
+            "outputs": ["{options.outputFile}"],
+            "options": {
+                "lintFilePatterns": ["libs/point-cloud-wasm/**/*.ts"]
+            }
+        },
+        "test": {
+            "executor": "@nrwl/jest:jest",
+            "outputs": ["coverage/libs/point-cloud-wasm"],
+            "options": {
+                "jestConfig": "libs/point-cloud-wasm/jest.config.ts",
+                "passWithNoTests": true
+            }
+        },
+        "test-integration": {
+            "executor": "@nrwl/workspace:run-commands",
+            "options": {
+                "commands": [
+                    "npx nx build point-cloud",
+                    "npx nx run point-cloud-wasm:build",
+                    "node --test libs/point-cloud-wasm/tests/node-integration.mjs",
+                    "node --test libs/point-cloud-wasm/tests/e57-node-integration.mjs",
+                    "node --test libs/point-cloud-wasm/tests/reader-node-integration.mjs"
+                ],
+                "parallel": false
+            }
+        }
+    },
+    "tags": []
+}

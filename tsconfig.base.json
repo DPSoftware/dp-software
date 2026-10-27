@@ -16,6 +16,7 @@
         "baseUrl": ".",
         "paths": {
             "@dp-software/point-cloud": ["libs/point-cloud/src/index.ts"],
+            "@dp-software/point-cloud-wasm": ["libs/point-cloud-wasm/src/index.ts"],
             "@dp-software/utils": ["libs/utils/src/index.ts"]
         }
     },

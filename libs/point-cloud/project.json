@@ -10,7 +10,19 @@
                 "outputPath": "dist/libs/point-cloud",
                 "main": "libs/point-cloud/src/index.ts",
                 "tsConfig": "libs/point-cloud/tsconfig.lib.json",
-                "assets": ["libs/point-cloud/*.md"]
+                "assets": [
+                    "libs/point-cloud/*.md",
+                    {
+                        "input": ".",
+                        "glob": "LICENSE",
+                        "output": "."
+                    },
+                    {
+                        "input": ".",
+                        "glob": "NOTICE",
+                        "output": "."
+                    }
+                ]
             }
         },
         "publish": {
